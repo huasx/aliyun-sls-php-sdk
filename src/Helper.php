@@ -1,11 +1,11 @@
 <?php
 
-namespace Verypay;
+namespace Verypay\SlsLog;
 
 /**
  * Defines a few helper methods.
  *
- * @author fifsky <caixudong@verystar.cn>
+ * @author hsx huashunxin01@gmail.com
  */
 class Helper
 {

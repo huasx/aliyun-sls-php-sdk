@@ -1,16 +1,16 @@
 <?php
-namespace Verypay;
+namespace Verypay\SlsLog;
 
 /**
  * Created by PhpStorm.
- * User: 蔡旭东 fifsky@gmail.com
+ * User: hsx huashunxin01@gmail.com
  * Date: 14-7-21
  * Time: 下午2:18
  */
 class Curl {
 
     private $ch;
-    private $timeout = 5;
+    private $timeout = 10;
     private $is_ajax = false;
     private $referer = NULL;
     private $curl_error;
@@ -21,6 +21,9 @@ class Curl {
     private $url;
     private $method;
     private $post_data;
+
+    private $response;//返回的全部信息
+    private $info;//返回的curl info
 
     /**
      * Verify SSL Cert.
@@ -71,16 +74,16 @@ class Curl {
         }
 
         if ($this->http_header) {
-//            $this->http_header = array(
-//                'Content-Length: ' . strlen($post_data),
-//                'Content-Type: ' . $content_type,
-//                'Accept: ' . $accept_type
-//            );
             curl_setopt($this->ch, CURLOPT_HTTPHEADER, $this->http_header);
         }
-        $this->body       = curl_exec($this->ch);
+
+        $this->response   = curl_exec($this->ch);
+        $header_size      = curl_getinfo($this->ch, CURLINFO_HEADER_SIZE);
+        $response_headers = substr($this->response, 0, $header_size);
+        $this->body       = substr($this->response, $header_size);
         $this->curl_error = curl_errno($this->ch);
-        $this->header     = curl_getinfo($this->ch);
+        $this->info       = curl_getinfo($this->ch);
+        $this->parseOutHeaders($response_headers);
         $this->log($url);
         if (is_resource($this->ch)) {
             curl_close($this->ch);
@@ -90,7 +93,28 @@ class Curl {
         $this->method    = $method;
         $this->post_data = $post_data;
         return $this;
+    }
 
+    /**
+     * 解析出header
+     *
+     * @param string $response_headers
+     *
+     */
+    private function parseOutHeaders($response_headers)
+    {
+        $response_headers = explode("\r\n\r\n", trim($response_headers));
+        $response_headers = array_pop($response_headers);
+        $response_headers = explode("\r\n", $response_headers);
+     	array_shift($response_headers);
+        $header_assoc     = [];
+        foreach ($response_headers as $header) {
+            $kv           = explode(': ', $header);
+            $header_assoc[strtolower($kv[0])] = isset($kv[1]) ? $kv[1] : '';
+        }
+
+        $this->header     = $header_assoc;
+        //$this->header['_info'] = $this->info;
     }
 
     /**
@@ -198,7 +222,7 @@ class Curl {
         curl_setopt($ch, CURLOPT_URL, $url); //设置访问的url地址
         curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout); //设置超时
         curl_setopt($ch, CURLOPT_USERAGENT, $userAgent); //用户访问代理 User-Agent
-        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_HEADER, 1);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0); //跟踪301
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); //返回结果
         if (substr($url, 0, 5) == 'https') {
@@ -238,6 +262,15 @@ class Curl {
         $this->http_header = $headers;
     }
 
+    public function getInfo($key = NULL)
+    {
+        if ($key !== NULL) {
+            return isset($this->info[$key]) ? $this->info : NULL;
+        } else {
+            return $this->info;
+        }
+    }
+
     public function getHeader($key = NULL) {
         if ($key !== NULL) {
             return isset($this->header[$key]) ? $this->header : NULL;
@@ -247,7 +280,7 @@ class Curl {
     }
 
     public function getStatusCode() {
-        return $this->header['http_code'];
+        return $this->info['http_code'];
     }
 
     /**
@@ -264,7 +297,7 @@ class Curl {
      * @return mixed
      */
     public function getRequestTime($time_key = 'total_time') {
-        return $this->header[$time_key];
+        return $this->info[$time_key];
     }
 
     public function setReferer($url) {

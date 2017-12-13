@@ -6,7 +6,8 @@
  * Editor: created by PhpStorm
  */
 
-namespace Verypay;
+namespace Verypay\SlsLog;
+
 
 class Sls
 {
@@ -17,7 +18,7 @@ class Sls
     public $curl;
     public $version = '0.6.0';//当前API版本
     public $region;
-    public $endpoint = 'cn-hangzhou.log.aliyuncs.com:80';//服务入口
+    public $endpoint = 'cn-hangzhou.log.aliyuncs.com';//服务入口
     public $project;
     public $logstore;//日志库名
     public $sign_type = 'hmac-sha1';
@@ -71,6 +72,18 @@ class Sls
         return $this;
     }
 
+    /**
+     * 获取项目日志
+     *
+     * 不加limit时，header头会返回count
+     *
+     * $data_arr = [
+     *  'query' => '标准sql，必须含有 __date__(年-月-日 时-分-秒) 或者 __time__(unix_time)'
+     * ]
+     *
+     * @param $data_arr
+     * @return array|mixed
+     */
     public function getProjectLogs($data_arr)
     {
         return $this->calApi('GET', '/logs', $data_arr);
@@ -134,6 +147,32 @@ class Sls
     {
         $data_arr['logstoreName'] = $this->logstore;
         return $this->calApi('GET', '/logstores/' . $this->logstore, $data_arr);
+    }
+
+    /**
+     * 列出 logstore 下当前所有可用 shard
+     *
+     * @return array|mixed
+     */
+    public function getShardList()
+    {
+        $data_arr['logstoreName'] = $this->logstore;
+        return $this->calApi('GET', '/logstores/' . $this->logstore . '/shards', $data_arr);
+    }
+
+    /**
+     * 获取cursor
+     *
+     * @param $data_arr
+     * @return array|mixed
+     */
+    public function getCursor($data_arr)
+    {
+        $data_arr['type'] = 'cursor';
+        $shard            = $data_arr['shard'];
+        unset($data_arr['shard']);
+
+        return $this->calApi('GET', '/logstores/' . $this->logstore . '/shards/' . $shard, $data_arr);
     }
 
     /**
@@ -266,7 +305,6 @@ class Sls
         } else {
             $res   = $this->curl->post($url, $post_body);
         }
-
         if ($res->getError()) {
             $resp_data = [
                 'errorCode'    => 28,
@@ -275,6 +313,7 @@ class Sls
         } else {
             $resp_data = $to_array ? json_decode($res->getBody(), true) : $res->getBody();
         }
+
         return $resp_data;
     }
 
