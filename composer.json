@@ -1,6 +1,7 @@
 {
   "name": "verypay/php-sls-sdk",
   "description": "PHP sdk for aliyun sls log service",
+  "keywords": ["aliyun", "sls", "log"],
   "type": "library",
   "license": "MIT",
   "authors": [
