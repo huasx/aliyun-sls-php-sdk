@@ -1,5 +1,8 @@
 ## PHP sdk for aliyun sls log service
+
+<p align="center">
 <a href="https://travis-ci.org/huasx/aliyun-sls-php-sdk"><img src="https://travis-ci.org/huasx/aliyun-sls-php-sdk.svg?branch=master" alt="Build Status"></a>
+</p>
 
 ### API VERSION
 0.6.0
