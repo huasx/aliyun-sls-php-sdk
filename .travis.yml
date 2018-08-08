@@ -1,0 +1,13 @@
+language: php
+
+env:
+  global:
+    - setup=stable
+
+php:
+  - 7.1.0
+
+install: true
+script: true
+
+sudo: false
